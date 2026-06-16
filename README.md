@@ -1,5 +1,4 @@
-# -speech-recognition-on-spark
-# 离线会议同传终端 · 前端
+# 离线会议语音转译终端 · 前端
 
 > 面向 **NVIDIA DGX Spark** 单机部署的离线会议翻译与纪要系统的 Web 前端。
 > 本仓库只包含前端页面、类型契约、Mock 数据与对接骨架。
@@ -12,7 +11,7 @@
 ## 1. 项目简介
 
 - 单机部署，强调"音频、文本、译文不出本地私有网络"。
-- 5 个页面: 设备首页、同传主控大屏、PC 字幕、术语库管理、会议结束 / 导出。
+- 5 个页面: 设备首页、语音转译主控大屏、PC 字幕、术语库管理、会议结束 / 导出。
 - 当前阶段: **前端页面已完成视觉与结构**，使用 `lib/mock-data.ts` 提供静态数据；REST 与 WebSocket 客户端为骨架，等待后端实现后逐步替换。
 
 ## 2. 技术栈
@@ -62,7 +61,7 @@ NEXT_PUBLIC_WS_BASE_URL=ws://<后端地址>:8000
 | 路由 | 页面 | 主要使用者 | 数据来源 |
 | --- | --- | --- | --- |
 | `/` | 设备首页 / 入口 | 主持人、现场操作 | `GET /api/device/status` |
-| `/meeting/live` | 同传主控 + 大屏 | 主持人 | WebSocket + `POST /api/meetings`、`POST /api/meetings/{id}/end` |
+| `/meeting/live` | 语音转译主控 + 大屏 | 主持人 | WebSocket + `POST /api/meetings`、`POST /api/meetings/{id}/end` |
 | `/caption` | PC 字幕查看 | 参会者 | WebSocket (只读 + 发送语言偏好) |
 | `/terms` | 术语库管理 | 管理员 | `GET/POST/PATCH/DELETE /api/terms*` |
 | `/meeting/summary` | 会议结束 / 导出 | 主持人、参会者 | `GET /api/meetings/{id}/summary`、`POST /api/meetings/{id}/exports` |
@@ -456,7 +455,7 @@ export interface MeetingSummary {
 ## 10. 联调检查清单
 
 - [ ] 首页能读取真实设备状态 (`microphoneLevel`、`networkStrength` 驱动动画)
-- [ ] 点击"开始同声传译"能返回真实 `meetingId`
+- [ ] 点击"开始语音转译"能返回真实 `meetingId`
 - [ ] `/meeting/live` 能建立 WebSocket，发送 `start_session`
 - [ ] 主控端能上行 PCM 音频帧
 - [ ] 主控端能接收 `transcript_partial` 与 `translation_final`

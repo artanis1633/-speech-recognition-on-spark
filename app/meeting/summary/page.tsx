@@ -12,7 +12,7 @@ export default function MeetingSummaryPage() {
           <CheckCircle2 size={58} />
           <div>
             <h1>会议已结束</h1>
-            <p>感谢使用同传终端系统，会议转写与译文已本地留存。</p>
+            <p>感谢使用语音转译终端系统，会议转写与译文已本地留存。</p>
           </div>
         </div>
 

@@ -18,7 +18,7 @@ export default function LiveMeetingPage() {
       <div className="page-grid live-layout">
         <section className="panel live-main">
           <PanelHeader
-            title="同传主控 + 会议室大屏展示"
+            title="语音转译主控 + 会议室大屏展示"
             subtitle="本地 ASR、RAG 术语检索与 LLM 翻译流水线"
             action={<span className="status-pill">会议进行中</span>}
           />

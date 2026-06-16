@@ -12,7 +12,7 @@ import {
 
 const entries = [
   {
-    title: "开始同声传译",
+    title: "开始语音转译",
     desc: "创建本地会议，开启离线实时转写与翻译。",
     href: "/meeting/live",
     icon: Mic,
@@ -48,7 +48,7 @@ export default function HomePage() {
         <div className="home-hero">
           <div className="home-hero-content">
             <p className="eyebrow">NVIDIA DGX Spark · Offline AI Meeting System</p>
-            <h1>会议室同传终端系统</h1>
+            <h1>会议室语音转译终端系统</h1>
             <p>高效沟通 · 实时互译 · 智慧会议</p>
           </div>
         </div>
