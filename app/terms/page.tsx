@@ -1,5 +1,5 @@
-import { CheckCircle2, Database, FileUp, Search, Trash2, Upload } from "lucide-react";
-import { terms } from "@/lib/mock-data";
+import { CheckCircle2, Database, FileUp, Search, Trash2, Upload, XCircle } from "lucide-react";
+import { glossaryEntries, glossaryState } from "@/lib/mock-data";
 import { PanelHeader } from "@/components/shared/PanelHeader";
 
 export default function TermsPage() {
@@ -9,24 +9,28 @@ export default function TermsPage() {
         <PanelHeader
           title="专业术语库管理页"
           subtitle="会前语料维护、检索、导入和状态管理"
-          action={<span className="status-pill">当前状态：已启用</span>}
+          action={
+            <span className="status-pill">
+              当前状态：{glossaryState.global_enabled ? "已启用" : "已禁用"}
+            </span>
+          }
         />
 
         <div className="mini-metrics terms-metrics">
           <div className="metric-card">
             <div className="label">术语总数</div>
-            <div className="value">256</div>
-            <div className="hint">行业通用语料库构建</div>
+            <div className="value">{glossaryState.total}</div>
+            <div className="hint">已启用 {glossaryState.enabled} / 已禁用 {glossaryState.disabled}</div>
           </div>
           <div className="metric-card">
-            <div className="label">当前状态</div>
-            <div className="value">已启用</div>
-            <div className="hint">Embedding 与 RAG 已加载</div>
+            <div className="label">Embedding 模型</div>
+            <div className="value">{glossaryState.embedding_model.split("/").pop()}</div>
+            <div className="hint">维度: {glossaryState.embed_dim}</div>
           </div>
           <div className="metric-card">
             <div className="label">最后导入</div>
-            <div className="value">2024-05-20</div>
-            <div className="hint">支持 CSV / Excel / U 盘导入</div>
+            <div className="value">{glossaryState.last_import_at?.slice(0, 10) ?? "无"}</div>
+            <div className="hint">来源: {glossaryState.last_import_source ?? "-"}</div>
           </div>
         </div>
 
@@ -42,11 +46,13 @@ export default function TermsPage() {
           </button>
           <label className="search-wrapper">
             <Search size={18} />
-            <input className="search-field" placeholder="搜索中文术语 / 英文术语 / 编号" />
+            <input className="search-field" placeholder="搜索中文术语 / 英文术语 / 缩写" />
           </label>
           <select className="select-field term-filter" defaultValue="all">
             <option value="all">分类：全部</option>
-            <option value="tech">技术类</option>
+            <option value="技术">技术</option>
+            <option value="医学">医学</option>
+            <option value="未分类">未分类</option>
           </select>
           <select className="select-field term-filter" defaultValue="all-status">
             <option value="all-status">状态：全部</option>
@@ -64,7 +70,7 @@ export default function TermsPage() {
               <tr>
                 <th>中文术语</th>
                 <th>英文术语</th>
-                <th>编号</th>
+                <th>缩写</th>
                 <th>分类</th>
                 <th>状态</th>
                 <th>更新时间</th>
@@ -72,24 +78,26 @@ export default function TermsPage() {
               </tr>
             </thead>
             <tbody>
-              {terms.map((term) => (
-                <tr key={term.id}>
-                  <td>{term.sourceTerm}</td>
-                  <td>{term.targetTerm}</td>
-                  <td>{term.code ?? "-"}</td>
-                  <td>{term.category}</td>
+              {glossaryEntries.map((entry) => (
+                <tr key={entry.id}>
+                  <td>{entry.zh}</td>
+                  <td>{entry.en}</td>
+                  <td>{entry.abbr ?? "-"}</td>
+                  <td>{entry.category}</td>
                   <td>
-                    <span className={`tag ${term.status === "enabled" ? "green" : "gray"}`}>
-                      {term.status === "enabled" ? (
+                    <span className={`tag ${entry.enabled ? "green" : "gray"}`}>
+                      {entry.enabled ? (
                         <>
                           <CheckCircle2 size={14} /> 已启用
                         </>
                       ) : (
-                        "已禁用"
+                        <>
+                          <XCircle size={14} /> 已禁用
+                        </>
                       )}
                     </span>
                   </td>
-                  <td>{term.updatedAt}</td>
+                  <td>{entry.updated_at.slice(0, 10)}</td>
                   <td>
                     <button className="secondary-button table-action" type="button">
                       编辑
@@ -102,7 +110,7 @@ export default function TermsPage() {
         </div>
 
         <div className="pagination">
-          <span>共 256 条</span>
+          <span>共 {glossaryState.total} 条</span>
           <div className="pages">
             <button className="page active" type="button">
               1
@@ -120,7 +128,7 @@ export default function TermsPage() {
               5
             </button>
           </div>
-          <span>10 条 / 页</span>
+          <span>20 条 / 页</span>
         </div>
       </section>
     </main>

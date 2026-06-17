@@ -1,3 +1,11 @@
+/**
+ * Types aligned with spark-trams-agent backend API.
+ * See: docs/api.md
+ */
+
+// --- Language ---
+
+/** Backend only supports zh ↔ en; UI keeps broader list as placeholder */
 export type LanguageCode =
   | "zh-CN"
   | "en-US"
@@ -6,6 +14,9 @@ export type LanguageCode =
   | "es-ES"
   | "de-DE"
   | "ko-KR";
+
+/** Backend detection result: "zh" | "en" */
+export type BackendLangCode = "zh" | "en";
 
 export type DeviceStatus = "normal" | "connected" | "warning" | "error" | "disabled";
 
@@ -22,120 +33,140 @@ export interface DeviceHealth {
   currentTime: string;
 }
 
-export interface MeetingSession {
-  meetingId: string;
-  title: string;
-  sourceLang: LanguageCode;
-  targetLang: LanguageCode;
+// --- Session (lightweight, derived from WS events) ---
+
+export interface SessionInfo {
+  sessionId: string;
+  speaker: string;
   startedAt: string;
-  endedAt?: string;
-  durationSeconds: number;
-  connectedClients: number;
   status: "idle" | "live" | "ended";
 }
 
-export interface SubtitleSegment {
-  id: string;
-  meetingId: string;
-  sourceText: string;
-  translatedText: string;
-  sourceLang: LanguageCode;
-  targetLang: LanguageCode;
-  isFinal: boolean;
-  latencyMs?: number;
-  termHits?: number;
-  timestamp: string;
+// --- Subtitle / Translation segment ---
+
+export interface TranslationSegment {
+  segmentId: string;
+  speaker: string;
+  source: string;
+  translation: string;
+  marqueeText: string;
 }
 
-export interface TermEntry {
+// --- Glossary (术语库) ---
+
+export interface GlossaryEntry {
   id: string;
-  sourceTerm: string;
-  targetTerm: string;
-  code?: string;
+  zh: string;
+  en: string;
+  abbr: string | null;
   category: string;
-  status: "enabled" | "disabled";
-  updatedAt: string;
+  enabled: boolean;
+  created_at: string;
+  updated_at: string;
+  import_batch: string | null;
 }
 
-export interface MeetingSummary {
-  meetingId: string;
-  title: string;
-  startedAt: string;
-  endedAt: string;
-  durationSeconds: number;
-  sourceLang: LanguageCode;
-  targetLang: LanguageCode;
-  sourceWordCount: number;
-  translatedWordCount: number;
-  termHitCount: number;
-  previewSegments: SubtitleSegment[];
+export interface GlossaryState {
+  total: number;
+  enabled: number;
+  disabled: number;
+  global_enabled: boolean;
+  last_import_at: string | null;
+  last_import_source: string | null;
+  embedding_model: string;
+  embed_dim: number | null;
 }
 
-export interface ExportTask {
-  exportId: string;
-  meetingId: string;
-  format: "word" | "pdf";
-  status: "pending" | "processing" | "completed" | "failed";
-  downloadUrl?: string;
-  message?: string;
+export interface GlossaryImportResult {
+  imported: number;
+  skipped_duplicate: number;
+  errors: Array<{ row: number; error: string }>;
+  batch_id: string | null;
 }
 
-export type RealtimeEvent =
-  | {
-      type: "session_started";
-      meetingId: string;
-      timestamp: string;
-      payload: Pick<MeetingSession, "title" | "sourceLang" | "targetLang">;
-    }
-  | {
-      type: "transcript_partial";
-      meetingId: string;
-      timestamp: string;
-      payload: {
-        segmentId: string;
-        sourceText: string;
-        sourceLang: LanguageCode;
-        isFinal: false;
-        latencyMs: number;
-      };
-    }
-  | {
-      type: "translation_final";
-      meetingId: string;
-      timestamp: string;
-      payload: {
-        segmentId: string;
-        sourceText: string;
-        translatedText: string;
-        sourceLang: LanguageCode;
-        targetLang: LanguageCode;
-        isFinal: true;
-        latencyMs: number;
-        termHits: number;
-      };
-    }
-  | {
-      type: "client_count_changed";
-      meetingId: string;
-      timestamp: string;
-      payload: {
-        connectedClients: number;
-      };
-    }
-  | {
-      type: "session_ended";
-      meetingId: string;
-      timestamp: string;
-      payload: {
-        summaryUrl: string;
-      };
-    }
-  | {
-      type: "error";
-      meetingId: string;
-      timestamp: string;
-      payload: {
-        code: string;
-        message: string;
-      };
-    };
+// --- Prompts ---
+
+export interface PromptItem {
+  key: string;
+  label: string;
+  content: string;
+  default: string;
+  is_default: boolean;
+  updated_at: string | null;
+}
+
+// --- Export ---
+// Export is a direct Markdown file download via GET /api/export/{session_id}
+// No JSON model needed; the client triggers a browser download.
+
+// --- WebSocket events (server → client) ---
+
+export interface WsSessionStart {
+  type: "session_start";
+  session_id: string;
+  speaker: string;
+}
+
+export interface WsAsrResult {
+  type: "asr_result";
+  text: string;
+  language: BackendLangCode;
+}
+
+export interface WsTranslation {
+  type: "translation";
+  speaker: string;
+  source: string;
+  translation: string;
+  marquee_text: string;
+  segment_id: string;
+}
+
+export interface WsSpeakerChanged {
+  type: "speaker_changed";
+  speaker: string;
+}
+
+export interface WsSessionEnd {
+  type: "session_end";
+  session_id: string;
+  download_url: string;
+  total_segments: number;
+}
+
+export interface WsError {
+  type: "error";
+  message: string;
+}
+
+export type WsServerEvent =
+  | WsSessionStart
+  | WsAsrResult
+  | WsTranslation
+  | WsSpeakerChanged
+  | WsSessionEnd
+  | WsError;
+
+// --- WebSocket commands (client → server) ---
+
+export interface WsStartCommand {
+  action: "start";
+  speaker?: string;
+  target_lang?: string;
+}
+
+export interface WsSetSpeakerCommand {
+  action: "set_speaker";
+  speaker: string;
+}
+
+export interface WsSetTargetLangCommand {
+  action: "set_target_lang";
+  target_lang: string;
+}
+
+export interface WsStopCommand {
+  action: "stop";
+}
+
+export type WsClientCommand = WsStartCommand | WsSetSpeakerCommand | WsSetTargetLangCommand | WsStopCommand;

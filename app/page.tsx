@@ -1,13 +1,15 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { CSSProperties } from "react";
 import { BookOpen, FolderOpen, Mic, Monitor, Radio } from "lucide-react";
-import { deviceHealth } from "@/lib/mock-data";
 import { StatusItem } from "@/components/shared/StatusItem";
 import {
   MicrophoneLevelIcon,
   StorageRingIcon,
   TimePulseIcon,
-  WifiSignalIcon
+  WifiSignalIcon,
 } from "@/components/shared/DynamicStatusIcon";
 
 const entries = [
@@ -16,32 +18,112 @@ const entries = [
     desc: "创建本地会议，开启离线实时转写与翻译。",
     href: "/meeting/live",
     icon: Mic,
-    bg: "linear-gradient(145deg, #0f69ff, #05339c)"
+    bg: "linear-gradient(145deg, #0f69ff, #05339c)",
   },
   {
     title: "PC 字幕查看",
-    desc: "局域网参会端入口，支持个人字幕语种。",
+    desc: "局域网参会端入口，查看实时字幕。",
     href: "/caption",
     icon: Monitor,
-    bg: "linear-gradient(145deg, #058686, #053d4d)"
+    bg: "linear-gradient(145deg, #058686, #053d4d)",
   },
   {
     title: "专业术语库管理",
     desc: "维护行业术语和 RAG 语料，提升翻译一致性。",
     href: "/terms",
     icon: BookOpen,
-    bg: "linear-gradient(145deg, #5734d6, #20156c)"
+    bg: "linear-gradient(145deg, #5734d6, #20156c)",
   },
   {
     title: "历史会议 / 文档",
-    desc: "查看会议记录，并导出 Word 或 PDF 文件。",
+    desc: "查看会议记录，并导出 Markdown 文件。",
     href: "/meeting/summary",
     icon: FolderOpen,
-    bg: "linear-gradient(145deg, #d98116, #723605)"
-  }
+    bg: "linear-gradient(145deg, #d98116, #723605)",
+  },
 ];
 
 export default function HomePage() {
+  const [micPermission, setMicPermission] = useState<"granted" | "denied" | "prompt" | "unknown">("unknown");
+  const [isOnline, setIsOnline] = useState(true);
+  const [currentTime, setCurrentTime] = useState("");
+
+  // Check microphone permission
+  useEffect(() => {
+    if (typeof navigator !== "undefined" && navigator.permissions) {
+      navigator.permissions
+        .query({ name: "microphone" as PermissionName })
+        .then((result) => {
+          setMicPermission(result.state as "granted" | "denied" | "prompt");
+          result.addEventListener("change", () => {
+            setMicPermission(result.state as "granted" | "denied" | "prompt");
+          });
+        })
+        .catch(() => {
+          setMicPermission("unknown");
+        });
+    }
+  }, []);
+
+  // Check network status
+  useEffect(() => {
+    const updateOnlineStatus = () => {
+      setIsOnline(navigator.onLine);
+    };
+
+    updateOnlineStatus();
+    window.addEventListener("online", updateOnlineStatus);
+    window.addEventListener("offline", updateOnlineStatus);
+
+    return () => {
+      window.removeEventListener("online", updateOnlineStatus);
+      window.removeEventListener("offline", updateOnlineStatus);
+    };
+  }, []);
+
+  // Update time every second
+  useEffect(() => {
+    const updateTime = () => {
+      const now = new Date();
+      setCurrentTime(
+        now.toLocaleTimeString("zh-CN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          second: "2-digit",
+          hour12: false,
+        })
+      );
+    };
+
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const formatBytes = (bytes: number): string => {
+    if (bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return Math.round(bytes / Math.pow(k, i) * 100) / 100 + " " + sizes[i];
+  };
+
+  const getMicStatusText = (): { value: string; detail: string; tone: "green" | "blue" | "muted" | "red" } => {
+    switch (micPermission) {
+      case "granted":
+        return { value: "已授权", detail: "可以使用", tone: "green" };
+      case "denied":
+        return { value: "权限被拒绝", detail: "需要授权", tone: "red" };
+      case "prompt":
+        return { value: "未授权", detail: "等待用户授权", tone: "muted" };
+      default:
+        return { value: "未知", detail: "检测中", tone: "muted" };
+    }
+  };
+
+  const micStatus = getMicStatusText();
+
   return (
     <main className="app-shell home-page">
       <section className="page-grid panel home-panel">
@@ -77,30 +159,30 @@ export default function HomePage() {
 
         <div className="home-status panel-soft">
           <StatusItem
-            icon={<MicrophoneLevelIcon level={76} />}
+            icon={<MicrophoneLevelIcon level={micPermission === "granted" ? 76 : 0} />}
             label="麦克风状态"
-            value="正常"
-            detail="收音 76%"
-            tone="green"
+            value={micStatus.value}
+            detail={micStatus.detail}
+            tone={micStatus.tone}
           />
           <StatusItem
-            icon={<WifiSignalIcon strength={88} />}
+            icon={<WifiSignalIcon strength={isOnline ? 95 : 0} />}
             label="网络状态"
-            value="已连接"
-            detail="信号 88%"
-            tone="blue"
+            value={isOnline ? "已连接" : "离线"}
+            detail={isOnline ? "网络正常" : "网络断开"}
+            tone={isOnline ? "blue" : "red"}
           />
           <StatusItem
-            icon={<StorageRingIcon level={72} />}
+            icon={<StorageRingIcon level={0} />}
             label="存储空间"
-            value={`${deviceHealth.storageFreeGb} GB 可用`}
-            detail="剩余 72%"
+            value="待配置"
+            detail="服务器存储信息"
             tone="muted"
           />
           <StatusItem
             icon={<TimePulseIcon />}
             label="时间"
-            value={deviceHealth.currentTime}
+            value={currentTime || "00:00:00"}
             detail="本地系统"
             tone="muted"
           />

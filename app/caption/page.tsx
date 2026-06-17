@@ -1,9 +1,8 @@
 import { CheckCircle2, Clock3, Monitor, MonitorSpeaker, Volume2 } from "lucide-react";
-import { activeMeeting, languages, subtitleSegments } from "@/lib/mock-data";
+import { activeSession, languages, translationSegments } from "@/lib/mock-data";
 import { PanelHeader } from "@/components/shared/PanelHeader";
 import { VideoStage } from "@/components/shared/VideoStage";
 import { WaveIndicator } from "@/components/shared/WaveIndicator";
-import { formatDuration } from "@/lib/format";
 
 export default function CaptionPage() {
   return (
@@ -12,7 +11,7 @@ export default function CaptionPage() {
         <section className="panel caption-left">
           <PanelHeader
             title="PC 字幕查看页"
-            subtitle="参会者通过局域网访问主机，按需切换字幕语言"
+            subtitle="参会者通过局域网访问主机，查看实时字幕"
             action={<span className="status-pill blue">已连接本地设备</span>}
           />
 
@@ -23,16 +22,12 @@ export default function CaptionPage() {
                 <strong>http://192.168.31.20</strong>
               </div>
               <div>
-                <p className="eyebrow">会议名称</p>
-                <strong>{activeMeeting.title}</strong>
+                <p className="eyebrow">会话 ID</p>
+                <strong>{activeSession.sessionId}</strong>
               </div>
               <div>
-                <p className="eyebrow">网络延迟</p>
-                <strong>12 ms</strong>
-              </div>
-              <div>
-                <p className="eyebrow">会议时长</p>
-                <strong>{formatDuration(activeMeeting.durationSeconds)}</strong>
+                <p className="eyebrow">当前发言人</p>
+                <strong>{activeSession.speaker}</strong>
               </div>
             </div>
 
@@ -54,14 +49,14 @@ export default function CaptionPage() {
           </div>
 
           <div className="subtitle-stack">
-            {subtitleSegments.slice(0, 2).map((segment) => (
-              <article className="subtitle-card" key={segment.id}>
-                <p className="subtitle-label">原文（中文）</p>
-                <p className="subtitle-content">{segment.sourceText}</p>
+            {translationSegments.slice(0, 2).map((segment) => (
+              <article className="subtitle-card" key={segment.segmentId}>
+                <p className="subtitle-label">原文（中文） · {segment.speaker}</p>
+                <p className="subtitle-content">{segment.source}</p>
                 <WaveIndicator intensity="high" />
                 <p className="subtitle-label">译文（English）</p>
-                <p className="subtitle-content subtitle-english">{segment.translatedText}</p>
-                <WaveIndicator intensity={segment.latencyMs && segment.latencyMs > 650 ? "medium" : "low"} />
+                <p className="subtitle-content subtitle-english">{segment.translation}</p>
+                <WaveIndicator intensity="low" />
               </article>
             ))}
           </div>
@@ -69,7 +64,7 @@ export default function CaptionPage() {
 
         <aside className="sidebar-stack">
           <section className="panel caption-settings">
-            <PanelHeader title="字幕设置" subtitle="用户偏好可本地保存，后续可对接后端用户配置" />
+            <PanelHeader title="字幕设置" subtitle="用户偏好可本地保存" />
 
             <label className="setting-row">
               <span>源语言</span>
@@ -118,7 +113,7 @@ export default function CaptionPage() {
           </section>
 
           <section className="panel caption-settings">
-            <PanelHeader title="访问状态" subtitle="移动端和 PC 端均可复用同一字幕流" />
+            <PanelHeader title="访问状态" subtitle="当前后端仅支持中 ↔ 英自动翻译" />
             <div className="caption-chip">
               <Monitor size={18} /> 适配浏览器访问
             </div>

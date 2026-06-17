@@ -1,7 +1,7 @@
 import Link from "next/link";
-import { ArrowLeft, CheckCircle2, FileText, FileType2, History, RotateCcw } from "lucide-react";
-import { meetingSummary } from "@/lib/mock-data";
-import { formatDateTime, formatDuration, formatNumber } from "@/lib/format";
+import { ArrowLeft, CheckCircle2, FileText, History, RotateCcw } from "lucide-react";
+import { activeSession, translationSegments } from "@/lib/mock-data";
+import { formatDateTime } from "@/lib/format";
 import { PanelHeader } from "@/components/shared/PanelHeader";
 
 export default function MeetingSummaryPage() {
@@ -21,62 +21,40 @@ export default function MeetingSummaryPage() {
             <PanelHeader title="会议信息" subtitle="由本地会议流水线生成" />
             <div className="summary-info-grid">
               <div>
-                <span>会议主题</span>
-                <strong>{meetingSummary.title}</strong>
+                <span>会话 ID</span>
+                <strong>{activeSession.sessionId}</strong>
               </div>
               <div>
-                <span>会议时长</span>
-                <strong>{formatDuration(meetingSummary.durationSeconds)}</strong>
+                <span>发言人</span>
+                <strong>{activeSession.speaker}</strong>
               </div>
               <div>
                 <span>开始时间</span>
-                <strong>{formatDateTime(meetingSummary.startedAt)}</strong>
+                <strong>{formatDateTime(activeSession.startedAt)}</strong>
               </div>
               <div>
-                <span>结束时间</span>
-                <strong>{formatDateTime(meetingSummary.endedAt)}</strong>
+                <span>翻译方向</span>
+                <strong>中文 ↔ English（自动检测）</strong>
               </div>
               <div>
-                <span>源语言</span>
-                <strong>中文（自动识别）</strong>
+                <span>总段数</span>
+                <strong>{translationSegments.length} 段</strong>
               </div>
-              <div>
-                <span>默认目标语言</span>
-                <strong>English</strong>
-              </div>
-            </div>
-          </section>
-
-          <section className="mini-metrics">
-            <div className="metric-card">
-              <div className="label">原文字数总数</div>
-              <div className="value">{formatNumber(meetingSummary.sourceWordCount)}</div>
-              <div className="hint">条</div>
-            </div>
-            <div className="metric-card">
-              <div className="label">译文字数总数</div>
-              <div className="value">{formatNumber(meetingSummary.translatedWordCount)}</div>
-              <div className="hint">条</div>
-            </div>
-            <div className="metric-card">
-              <div className="label">术语命中总数</div>
-              <div className="value">{formatNumber(meetingSummary.termHitCount)}</div>
-              <div className="hint">条</div>
             </div>
           </section>
         </div>
 
         <section className="panel-soft content-preview">
-          <PanelHeader title="内容预览（节选）" subtitle="导出文档会包含完整转写、译文与纪要信息" />
-          {meetingSummary.previewSegments.slice(0, 2).map((segment) => (
-            <article key={segment.id} className="preview-row">
+          <PanelHeader title="内容预览（节选）" subtitle="导出文档包含完整转写与译文" />
+          {translationSegments.slice(0, 2).map((segment) => (
+            <article key={segment.segmentId} className="preview-row">
               <p>
                 <strong>原文：</strong>
-                {segment.sourceText}
+                {segment.source}
               </p>
               <p>
                 <strong>译文：</strong>
-                {segment.translatedText}
+                {segment.translation}
               </p>
             </article>
           ))}
@@ -85,10 +63,7 @@ export default function MeetingSummaryPage() {
 
         <div className="export-actions">
           <button className="primary-button" type="button">
-            <FileText size={18} /> 导出 Word
-          </button>
-          <button className="danger-button" type="button">
-            <FileType2 size={18} /> 导出 PDF
+            <FileText size={18} /> 导出 Markdown
           </button>
           <button className="secondary-button" type="button">
             <History size={18} /> 查看会议记录
