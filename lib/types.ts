@@ -139,12 +139,18 @@ export interface WsError {
   message: string;
 }
 
+export interface WsTargetLangChanged {
+  type: "target_lang_changed";
+  target_lang: string;
+}
+
 export type WsServerEvent =
   | WsSessionStart
   | WsAsrResult
   | WsTranslation
   | WsSpeakerChanged
   | WsSessionEnd
+  | WsTargetLangChanged
   | WsError;
 
 // --- WebSocket commands (client → server) ---

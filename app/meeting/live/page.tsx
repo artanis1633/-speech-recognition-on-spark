@@ -39,6 +39,9 @@ export default function LiveMeetingPage() {
   const audioContextRef = useRef<AudioContext | null>(null);
 
   const accessUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
+  const captionUrl = sessionId
+    ? `${accessUrl}/caption?session_id=${sessionId}`
+    : `${accessUrl}/caption`;
 
   // Map frontend language code to backend language code
   const langCodeMap: Record<string, string> = {
@@ -48,8 +51,12 @@ export default function LiveMeetingPage() {
 
   const handleTargetLangChange = (code: string) => {
     setTargetLang(code);
-    if (clientRef.current?.isConnected()) {
-      clientRef.current.setTargetLang(langCodeMap[code] || "en");
+    const backendLang = langCodeMap[code] || "en";
+    if (clientRef.current && clientRef.current.isConnected()) {
+      clientRef.current.setTargetLang(backendLang);
+      console.log("Sent set_target_lang:", backendLang);
+    } else {
+      console.log("WS not connected, will apply on next session start. target:", backendLang);
     }
   };
 
@@ -273,10 +280,10 @@ export default function LiveMeetingPage() {
                 <div className="qr-wrap">
                   <div>
                     <p className="eyebrow">访问地址</p>
-                    <strong style={{ fontSize: "0.85rem" }}>{accessUrl}/caption</strong>
+                    <strong style={{ fontSize: "0.85rem" }}>{captionUrl}</strong>
                   </div>
                   <div className="qr-box">
-                    <QRCodeSVG value={`${accessUrl}/caption`} size={96} bgColor="#ffffff" fgColor="#07111e" />
+                    <QRCodeSVG value={captionUrl} size={96} bgColor="#ffffff" fgColor="#07111e" />
                   </div>
                 </div>
               </section>
