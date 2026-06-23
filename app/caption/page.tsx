@@ -28,8 +28,10 @@ const LANG_CODE_MAP: Record<string, string> = {
 
 export default function CaptionPage() {
   const searchParams = useSearchParams();
-  const sessionId = searchParams.get("session_id") ?? "";
+  const initialSessionId = searchParams.get("session_id") ?? "";
 
+  const [activeSessionId, setActiveSessionId] = useState(initialSessionId);
+  const [inputSessionId, setInputSessionId] = useState(initialSessionId);
   const [isConnected, setIsConnected] = useState(false);
   const [speaker, setSpeaker] = useState("—");
   const [segments, setSegments] = useState<TranslationSegment[]>([]);
@@ -62,14 +64,23 @@ export default function CaptionPage() {
     sendCommand({ action: "set_target_lang", target_lang: backendLang });
   };
 
+  const handleConnect = () => {
+    const trimmed = inputSessionId.trim();
+    if (trimmed) {
+      setActiveSessionId(trimmed);
+      setSegments([]);
+      setError("");
+      setSessionEnded(false);
+    }
+  };
+
   useEffect(() => {
-    if (!sessionId) {
-      setError("缺少 session_id 参数，请通过主控页面的二维码访问此页面。");
+    if (!activeSessionId) {
       return;
     }
 
     const baseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL ?? "ws://localhost:8000";
-    const ws = new WebSocket(`${baseUrl}/ws/caption/${sessionId}`);
+    const ws = new WebSocket(`${baseUrl}/ws/caption/${activeSessionId}`);
     wsRef.current = ws;
 
     ws.addEventListener("open", () => {
@@ -132,7 +143,7 @@ export default function CaptionPage() {
       ws.close();
       wsRef.current = null;
     };
-  }, [sessionId]);
+  }, [activeSessionId]);
 
   const targetLangLabel = languages.find((l) => l.code === targetLang)?.nativeLabel ?? "English";
 
@@ -182,25 +193,39 @@ export default function CaptionPage() {
             </div>
           )}
 
-          {!sessionId && !error && (
-            <div
-              style={{
-                padding: "1rem",
-                background: "#fff3cd",
-                borderRadius: "8px",
-                marginBottom: "1rem",
-                color: "#856404",
-              }}
+          {/* Session ID input */}
+          <div
+            style={{
+              display: "flex",
+              gap: "0.5rem",
+              marginBottom: "1rem",
+              alignItems: "center",
+            }}
+          >
+            <input
+              type="text"
+              className="select-field"
+              placeholder="输入会话 ID"
+              value={inputSessionId}
+              onChange={(e) => setInputSessionId(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleConnect(); }}
+              style={{ flex: 1 }}
+            />
+            <button
+              className="primary-button"
+              type="button"
+              onClick={handleConnect}
+              disabled={!inputSessionId.trim() || (inputSessionId.trim() === activeSessionId && isConnected)}
             >
-              请通过主控页面的二维码扫码进入此页面。
-            </div>
-          )}
+              {isConnected && inputSessionId.trim() === activeSessionId ? "已连接" : "连接"}
+            </button>
+          </div>
 
           <div className="caption-status-grid">
             <div className="panel-soft caption-info">
               <div>
                 <p className="eyebrow">会话 ID</p>
-                <strong>{sessionId || "—"}</strong>
+                <strong>{activeSessionId || "—"}</strong>
               </div>
               <div>
                 <p className="eyebrow">当前发言人</p>
