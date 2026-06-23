@@ -1140,3 +1140,65 @@ button {
     grid-template-columns: 1fr;
   }
 }
+
+/* ---- Spin utility (used by Loader2 icon) --------------------------------- */
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+.spin {
+  animation: spin 0.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spin { animation: none; }
+}
+
+/* ---- Meeting minutes display --------------------------------------------- */
+
+.minutes-summary-block {
+  padding: 4px 0 16px;
+  border-bottom: 1px solid rgba(102, 165, 224, 0.14);
+  margin-bottom: 4px;
+}
+
+.minutes-section-title {
+  margin: 0 0 8px;
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.minutes-summary-text {
+  margin: 0;
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.75;
+}
+
+.minutes-section {
+  padding: 14px 0;
+  border-bottom: 1px solid rgba(102, 165, 224, 0.14);
+}
+
+.minutes-section:last-child {
+  border-bottom: 0;
+  padding-bottom: 4px;
+}
+
+.minutes-list {
+  margin: 0;
+  padding: 0 0 0 18px;
+  display: grid;
+  gap: 6px;
+}
+
+.minutes-list-item {
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.65;
+}

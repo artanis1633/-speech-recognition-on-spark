@@ -5,7 +5,7 @@ interface StatusItemProps {
   label: string;
   value: string;
   detail?: string;
-  tone?: "green" | "blue" | "muted" | "orange";
+  tone?: "green" | "blue" | "muted" | "orange" | "red";
 }
 
 export function StatusItem({ icon, label, value, detail, tone = "green" }: StatusItemProps) {

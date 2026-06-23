@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, Clock3, Mic, MicOff, Power, Settings } from "lucide-react";
+import { ArrowLeft, Bell, Clock3, Mic, MicOff, Power, Settings, X } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { languages } from "@/lib/mock-data";
 import { PanelHeader } from "@/components/shared/PanelHeader";
@@ -17,6 +18,7 @@ type FontSize = "small" | "medium" | "large";
 const FONT_SIZES: Record<FontSize, string> = { small: "1rem", medium: "1.25rem", large: "1.6rem" };
 
 export default function LiveMeetingPage() {
+  const router = useRouter();
   const [isRecording, setIsRecording] = useState(false);
   const [isConnected, setIsConnected] = useState(false);
   const [sessionId, setSessionId] = useState<string>("");
@@ -24,6 +26,8 @@ export default function LiveMeetingPage() {
   const [micPermission, setMicPermission] = useState<"granted" | "denied" | "prompt">("prompt");
   const [segments, setSegments] = useState<TranslationSegment[]>([]);
   const [error, setError] = useState("");
+  const [endedSessionId, setEndedSessionId] = useState("");
+  const [minutesNotif, setMinutesNotif] = useState<{ summary: string } | null>(null);
 
   // Sidebar panel mode: "main" or "settings"
   const [sidebarMode, setSidebarMode] = useState<"main" | "settings">("main");
@@ -37,6 +41,18 @@ export default function LiveMeetingPage() {
   const clientRef = useRef<RealtimeClient | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioContextRef = useRef<AudioContext | null>(null);
+  // Keep router in a ref so event-handler closures always see the latest value
+  const routerRef = useRef(router);
+  useEffect(() => { routerRef.current = router; }, [router]);
+
+  // Navigate to summary page as soon as session ends
+  useEffect(() => {
+    if (!endedSessionId) return;
+    const t = setTimeout(() => {
+      routerRef.current.push(`/meeting/summary?session_id=${endedSessionId}`);
+    }, 800);
+    return () => clearTimeout(t);
+  }, [endedSessionId]);
 
   const accessUrl = typeof window !== "undefined" ? window.location.origin : "http://localhost:3000";
   const captionUrl = sessionId
@@ -99,6 +115,10 @@ export default function LiveMeetingPage() {
       case "session_end":
         setIsConnected(false);
         setIsRecording(false);
+        setEndedSessionId(event.session_id);
+        break;
+      case "minutes_ready":
+        setMinutesNotif({ summary: event.summary });
         break;
       case "error":
         setError(event.message);
@@ -165,9 +185,10 @@ export default function LiveMeetingPage() {
       if (stream) stream.getTracks().forEach((track: MediaStreamTrack) => track.stop());
     }
     if (audioContextRef.current) { audioContextRef.current.close(); audioContextRef.current = null; }
-    if (clientRef.current) { clientRef.current.disconnect(); clientRef.current = null; }
+    // Send "stop" and keep socket open — server will push session_end after
+    // finishing the pipeline flush; the socket closes itself on session_end.
+    if (clientRef.current) { clientRef.current.disconnect(); }
     setIsRecording(false);
-    setIsConnected(false);
   };
 
   const latestSegment = segments[0];
@@ -192,6 +213,43 @@ export default function LiveMeetingPage() {
           {error && (
             <div style={{ padding: "1rem", background: "#ff000020", color: "#ff4444", borderRadius: "8px", marginBottom: "1rem" }}>
               ⚠️ {error}
+            </div>
+          )}
+
+          {/* 会议纪要就绪通知 */}
+          {minutesNotif && (
+            <div style={{ display:"flex", alignItems:"flex-start", justifyContent:"space-between",
+              gap:"12px", padding:"14px 16px", background:"rgba(22,119,255,0.1)",
+              border:"1px solid rgba(22,119,255,0.28)", borderRadius:"8px", marginBottom:"1rem" }}>
+              <div style={{ display:"flex", alignItems:"flex-start", gap:"10px", flex:1 }}>
+                <Bell size={16} style={{ color:"#76b7ff", flexShrink:0, marginTop:"2px" }} />
+                <div>
+                  <p style={{ margin:"0 0 4px", color:"#76b7ff", fontWeight:700, fontSize:"13px" }}>
+                    会议纪要已生成
+                  </p>
+                  <p style={{ margin:0, fontSize:"12px", color:"var(--muted)", lineHeight:1.5 }}>
+                    {minutesNotif.summary.length > 80
+                      ? `${minutesNotif.summary.slice(0, 80)}…`
+                      : minutesNotif.summary}
+                  </p>
+                </div>
+              </div>
+              <div style={{ display:"flex", gap:"8px", flexShrink:0, alignItems:"center" }}>
+                <Link
+                  href={endedSessionId ? `/meeting/summary?session_id=${endedSessionId}` : "/meeting/summary"}
+                  style={{ display:"inline-flex", alignItems:"center", gap:"6px",
+                    padding:"4px 12px", minHeight:"30px", borderRadius:"6px",
+                    background:"linear-gradient(180deg,#247cff,#0d4fc4)",
+                    color:"white", fontSize:"12px", fontWeight:700 }}>
+                  查看纪要
+                </Link>
+                <button type="button" aria-label="关闭通知"
+                  style={{ background:"none", border:"none", color:"var(--muted)",
+                    padding:"4px", cursor:"pointer", display:"flex" }}
+                  onClick={() => setMinutesNotif(null)}>
+                  <X size={16} />
+                </button>
+              </div>
             </div>
           )}
 
@@ -302,7 +360,7 @@ export default function LiveMeetingPage() {
                 <button className="secondary-button" type="button" onClick={() => setSidebarMode("settings")}>
                   <Settings size={18} /> 字幕设置
                 </button>
-                <Link className="secondary-button" href="/meeting/summary">
+                <Link className="secondary-button" href={endedSessionId ? `/meeting/summary?session_id=${endedSessionId}` : "/meeting/summary"}>
                   <Power size={18} /> 会议总结
                 </Link>
               </section>

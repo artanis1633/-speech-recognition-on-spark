@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 import { CheckCircle2, Clock3, Monitor, MonitorSpeaker, WifiOff } from "lucide-react";
 import { languages } from "@/lib/mock-data";
 import { PanelHeader } from "@/components/shared/PanelHeader";
@@ -180,16 +181,23 @@ export default function CaptionPage() {
           )}
 
           {sessionEnded && !error && (
-            <div
-              style={{
-                padding: "1rem",
-                background: "#f5f5f5",
-                borderRadius: "8px",
-                marginBottom: "1rem",
-                color: "#666",
-              }}
-            >
-              会议已结束，共 {segments.length} 条字幕记录。
+            <div style={{ padding:"14px 16px", background:"rgba(22,119,255,0.08)",
+              border:"1px solid rgba(22,119,255,0.2)", borderRadius:"8px",
+              marginBottom:"1rem", display:"flex", alignItems:"center",
+              justifyContent:"space-between", gap:"12px", flexWrap:"wrap" }}>
+              <span style={{ color:"var(--muted)", fontSize:"13px" }}>
+                会议已结束，共 {segments.length} 条字幕记录。
+              </span>
+              {activeSessionId && (
+                <Link
+                  href={`/meeting/summary?session_id=${activeSessionId}`}
+                  style={{ display:"inline-flex", alignItems:"center", gap:"6px",
+                    padding:"4px 14px", minHeight:"30px", borderRadius:"6px",
+                    background:"linear-gradient(180deg,#247cff,#0d4fc4)",
+                    color:"white", fontSize:"12px", fontWeight:700, flexShrink:0 }}>
+                  查看会议纪要
+                </Link>
+              )}
             </div>
           )}
 

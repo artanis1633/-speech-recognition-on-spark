@@ -3,7 +3,7 @@
  * See: docs/api.md
  */
 
-import type { GlossaryEntry, GlossaryImportResult, GlossaryState, PromptItem } from "@/lib/types";
+import type { GlossaryEntry, GlossaryImportResult, GlossaryState, MeetingMinutes, PromptItem } from "@/lib/types";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "";
 
@@ -151,6 +151,24 @@ export async function batchDeleteGlossaryEntries(ids: string[]): Promise<{ delet
     method: "POST",
     body: JSON.stringify({ ids }),
   });
+}
+
+// --- Meeting Minutes ---
+
+/**
+ * Fetch cached meeting minutes for a completed session.
+ * Throws if the session is not found or minutes are not yet generated (404).
+ */
+export async function getMinutes(sessionId: string): Promise<MeetingMinutes> {
+  return request(`/api/minutes/${sessionId}`);
+}
+
+/**
+ * Force-generate (or regenerate) meeting minutes for a session.
+ * Useful when auto-generation failed or when the prompt has been updated.
+ */
+export async function generateMinutes(sessionId: string): Promise<MeetingMinutes> {
+  return request(`/api/minutes/${sessionId}/generate`, { method: "POST" });
 }
 
 // --- Glossary Import ---

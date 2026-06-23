@@ -144,6 +144,13 @@ export interface WsTargetLangChanged {
   target_lang: string;
 }
 
+export interface WsMinutesReady {
+  type: "minutes_ready";
+  session_id: string;
+  summary: string;
+  minutes_url: string;
+}
+
 export type WsServerEvent =
   | WsSessionStart
   | WsAsrResult
@@ -151,7 +158,31 @@ export type WsServerEvent =
   | WsSpeakerChanged
   | WsSessionEnd
   | WsTargetLangChanged
+  | WsMinutesReady
   | WsError;
+
+// --- Meeting Minutes ---
+
+export interface MeetingMinutes {
+  session_id: string;
+  generated_at: string;
+  duration_seconds: number;
+  speakers: string[];
+  // Chinese
+  summary: string;
+  topics: string[];
+  key_points: string[];
+  decisions: string[];
+  action_items: string[];
+  // English
+  summary_en?: string;
+  topics_en?: string[];
+  key_points_en?: string[];
+  decisions_en?: string[];
+  action_items_en?: string[];
+  // Meeting source language ("zh" | "en")
+  source_lang?: string;
+}
 
 // --- WebSocket commands (client → server) ---
 

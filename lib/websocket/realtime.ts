@@ -44,6 +44,7 @@ export interface RealtimeClient {
 
 export function createRealtimeClient(options: RealtimeClientOptions): RealtimeClient {
   let socket: WebSocket | null = null;
+  let closeTimer: ReturnType<typeof setTimeout> | null = null;
   const baseUrl = process.env.NEXT_PUBLIC_WS_BASE_URL ?? "ws://localhost:8000";
 
   function sendCommand(cmd: WsClientCommand) {
@@ -60,13 +61,18 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
     socket.send(pcm);
   }
 
+  function forceClose() {
+    if (closeTimer) { clearTimeout(closeTimer); closeTimer = null; }
+    socket?.close();
+    socket = null;
+  }
+
   return {
     connect() {
       socket = new WebSocket(`${baseUrl}/ws/audio`);
       socket.binaryType = "arraybuffer";
 
       socket.addEventListener("open", () => {
-        // Immediately start session upon connection
         sendCommand({
           action: "start",
           speaker: options.speaker ?? "发言人 1",
@@ -85,12 +91,15 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
 
       socket.addEventListener("message", (event) => {
         if (typeof event.data !== "string") {
-          // Binary frames from server are not expected in current protocol
           return;
         }
         try {
           const parsed = JSON.parse(event.data) as WsServerEvent;
           options.onEvent(parsed);
+          // Close immediately once session_end arrives — no need to wait for timeout
+          if (parsed.type === "session_end") {
+            forceClose();
+          }
         } catch {
           // Ignore malformed messages
         }
@@ -100,14 +109,12 @@ export function createRealtimeClient(options: RealtimeClientOptions): RealtimeCl
     disconnect() {
       if (socket && socket.readyState === WebSocket.OPEN) {
         sendCommand({ action: "stop" });
-        // Give server time to send session_end before closing
-        setTimeout(() => {
-          socket?.close();
-          socket = null;
-        }, 500);
+        // Keep socket open so the server can finish the pipeline flush
+        // (ASR + translation can take several seconds after "stop").
+        // Force-close after 30 s as a safety net.
+        closeTimer = setTimeout(forceClose, 30000);
       } else {
-        socket?.close();
-        socket = null;
+        forceClose();
       }
     },
 
